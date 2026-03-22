@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>求人票ジェネレーター｜デモ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(96,165,250,0); }
+    }
+    .field-generating { animation: pulse-border 1.5s ease-in-out infinite; }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    textarea { resize: vertical; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div>
+      <h1 class="text-lg font-bold text-gray-900 leading-none">求人票ジェネレーター</h1>
+      <p class="text-xs text-gray-500 mt-0.5">Claude Opus 4 × doda 求人票最適化</p>
+    </div>
+  </div>
+  <span class="bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">DEMO</span>
+</header>
+
+<div class="flex h-[calc(100vh-65px)]">
+
+  <!-- Left Panel -->
+  <aside class="w-80 min-w-[280px] bg-white border-r border-gray-200 flex flex-col overflow-y-auto scrollbar-thin p-5 gap-4">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1.5">顧客情報メモ</label>
+      <p class="text-xs text-gray-400 mb-2">営業メモ・JDをそのまま貼り付けてください</p>
+      <textarea id="rawInput" rows="18"
+        class="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition"
+        placeholder="例）&#10;会社名：株式会社〇〇&#10;募集職種：エンジニア&#10;年収：600万〜800万..."></textarea>
+    </div>
+
+    <button id="clearBtn" class="flex items-center justify-center gap-2 text-xs text-gray-400 hover:text-red-400 transition py-1">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      クリア
+    </button>
+
+    <button id="pasteBtn" class="flex items-center justify-center gap-2 border border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-500 hover:text-blue-600 text-sm font-medium py-2.5 px-4 rounded-xl transition">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      クリップボードから貼り付け
+    </button>
+
+    <button id="generateBtn"
+      class="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-6 rounded-xl transition shadow-md hover:shadow-lg active:scale-95 text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z"/></svg>
+      求人票を自動生成
+    </button>
+
+    <button id="demoBtn"
+      class="w-full flex items-center justify-center gap-2 border border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-600 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl transition text-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z"/></svg>
+      デモデータで動作確認
+    </button>
+
+    <p id="generatingMsg" class="hidden text-center text-xs text-gray-400">Claude Opus が生成中です。しばらくお待ちください。</p>
+  </aside>
+
+  <!-- Right Panel -->
+  <main id="outputPanel" class="flex-1 overflow-y-auto scrollbar-thin">
+
+    <!-- Sticky action bar -->
+    <div class="sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <h2 class="font-bold text-gray-700">生成された求人票</h2>
+        <span id="doneTag" class="hidden bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">生成完了</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="copyAllBtn" class="hidden flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 hover:border-gray-400 bg-white px-3 py-1.5 rounded-lg transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          全コピー
+        </button>
+        <button id="downloadBtn" class="hidden flex items-center gap-1.5 text-sm text-white bg-gray-700 hover:bg-gray-800 px-3 py-1.5 rounded-lg transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          TXTダウンロード
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="flex flex-col items-center justify-center h-[calc(100%-60px)] text-center p-8">
+      <div class="w-20 h-20 bg-orange-50 rounded-2xl flex items-center justify-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#f97316" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-700 mb-2">まだ求人票が生成されていません</h3>
+      <p class="text-sm text-gray-400 max-w-xs">左パネルに顧客情報を貼り付けて「求人票を自動生成」を押すか、「デモデータで動作確認」をお試しください</p>
+    </div>
+
+    <!-- Field cards -->
+    <div id="fieldCards" class="hidden p-6 grid grid-cols-1 gap-4"></div>
+  </main>
+</div>
+
+<script>
+const FIELDS = [
+  { key: "jobTitle",        label: "求人タイトル",      rows: 2,  maxChars: 80 },
+  { key: "catchphrase",     label: "キャッチコピー",    rows: 2,  maxChars: 50 },
+  { key: "jobType",         label: "募集職種",          rows: 1 },
+  { key: "employmentType",  label: "雇用形態",          rows: 1 },
+  { key: "location",        label: "勤務地",            rows: 2 },
+  { key: "salary",          label: "年収・給与",        rows: 1 },
+  { key: "salaryDetail",    label: "給与詳細",          rows: 3 },
+  { key: "jobDescription",  label: "仕事内容",          rows: 10 },
+  { key: "requiredSkills",  label: "必須スキル・経験",  rows: 6 },
+  { key: "preferredSkills", label: "歓迎スキル・経験",  rows: 5 },
+  { key: "idealCandidate",  label: "求める人物像",      rows: 4 },
+  { key: "workHours",       label: "勤務時間",          rows: 2 },
+  { key: "holidays",        label: "休日・休暇",        rows: 3 },
+  { key: "benefits",        label: "福利厚生",          rows: 6 },
+  { key: "selectionProcess",label: "選考フロー",        rows: 3 },
+];
+
+const FIELD_NAME_TO_KEY = {
+  "求人タイトル": "jobTitle",
+  "キャッチコピー": "catchphrase",
+  "募集職種": "jobType",
+  "雇用形態": "employmentType",
+  "勤務地": "location",
+  "年収・給与": "salary",
+  "給与詳細": "salaryDetail",
+  "仕事内容": "jobDescription",
+  "必須スキル・経験": "requiredSkills",
+  "歓迎スキル・経験": "preferredSkills",
+  "求める人物像": "idealCandidate",
+  "勤務時間": "workHours",
+  "休日・休暇": "holidays",
+  "福利厚生": "benefits",
+  "選考フロー": "selectionProcess",
+};
+
+const DEMO_OUTPUT = `[FIELD:求人タイトル]
+【渋谷】シニアバックエンドエンジニア｜株式会社テクノソリューションズ｜年収700万〜1000万円・フレックス勤務
+[/FIELD]
+
+[FIELD:キャッチコピー]
+急成長SaaSでアーキテクチャを牽引。技術で事業を動かすポジション
+[/FIELD]
+
+[FIELD:募集職種]
+バックエンドエンジニア（シニア・テックリード候補）
+[/FIELD]
+
+[FIELD:雇用形態]
+正社員（試用期間3ヶ月）
+[/FIELD]
+
+[FIELD:勤務地]
+東京都渋谷区道玄坂2-10-12（渋谷駅・徒歩5分）
+※フレックスタイム制によりリモート勤務併用可
+[/FIELD]
+
+[FIELD:年収・給与]
+年収700万円〜1000万円（経験・スキルに応じて決定）
+[/FIELD]
+
+[FIELD:給与詳細]
+月給50万円〜70万円（固定残業代含まず）
+賞与：年2回（業績連動型、前期実績 平均1.8ヶ月分）
+昇給：年1回（4月）
+試用期間中の待遇変更なし
+[/FIELD]
+
+[FIELD:仕事内容]
+■ ポジション概要
+急成長中のBtoB SaaSプロダクト「ConnectHub」のバックエンド開発をリードするポジションです。
+エンジニア60名体制の中で、5名のチームを率いながら、新機能開発から技術的意思決定まで幅広く担当していただきます。
+
+■ 具体的な業務内容
+・新規SaaSプロダクト「ConnectHub」のバックエンドAPI設計・実装（Go / Python）
+・マイクロサービスアーキテクチャの設計・移行・最適化
+・チームメンバー5名のコードレビュー、技術メンタリング
+・アーキテクチャ選定・技術スタックの意思決定への参画
+・インフラ（AWS）のコスト最適化・パフォーマンスチューニング
+・月1回の技術発表会（LT会）での登壇・ナレッジシェア
+
+■ チーム・開発環境
+チーム構成：シニアエンジニア2名、ミドルエンジニア3名
+技術スタック：Go / Python / PostgreSQL / Redis / AWS（ECS, RDS, S3）/ Terraform
+開発スタイル：スクラム（2週間スプリント）、PRレビュー文化が根付いており品質重視
+[/FIELD]
+
+[FIELD:必須スキル・経験]
+・バックエンド開発の実務経験5年以上（Go / Java / Python / Rubyいずれか）
+・AWS等クラウドインフラを活用したシステム構築・運用経験
+・チームリードまたはテックリードとしてのマネジメント経験（3名以上）
+・RESTful API またはGraphQL の設計・実装経験
+・RDB（MySQL / PostgreSQL）の設計・パフォーマンスチューニング経験
+[/FIELD]
+
+[FIELD:歓迎スキル・経験]
+・SaaS企業でのプロダクト開発経験
+・マイクロサービスアーキテクチャの設計・移行経験
+・Terraform / Infrastructure as Code の実務経験
+・GraphQL の実務経験
+・技術ブログ執筆やOSSコントリビューションの実績
+・英語でのビジネスコミュニケーション能力
+[/FIELD]
+
+[FIELD:求める人物像]
+・技術的なこだわりを持ちながら、事業成長にコミットできる方
+・チームのパフォーマンスを最大化することに喜びを感じる方
+・変化の速い環境でも自律的に動き、積極的に課題解決できる方
+・エンジニアリング組織のカルチャー作りに興味がある方
+[/FIELD]
+
+[FIELD:勤務時間]
+フレックスタイム制
+コアタイム：11:00〜16:00
+標準労働時間：8時間/日
+時間外労働：月平均10〜15時間程度
+[/FIELD]
+
+[FIELD:休日・休暇]
+完全週休2日制（土・日）、祝日
+年末年始休暇（12/29〜1/3）
+年次有給休暇（入社半年後から20日付与、最大40日繰越可）
+慶弔休暇、特別休暇
+育児休業・介護休業（取得実績あり、男性取得率60%）
+[/FIELD]
+
+[FIELD:福利厚生]
+■ 社会保険・手当
+・各種社会保険完備（健康・厚生年金・雇用・労災）
+・通勤手当（全額支給、上限なし）
+
+■ キャリア・スキルアップ支援
+・書籍購入補助：月1万円
+・外部勉強会・カンファレンス参加費全額会社負担
+・オンライン学習プラットフォーム（Udemy Business）利用可
+
+■ ライフスタイル支援
+・リモートワーク可（週3日まで）
+・社員食堂完備（昼食補助あり）
+・健康診断（年1回）
+
+■ その他
+・ストックオプション制度（全社員対象）
+・社内表彰制度（四半期MVP）
+[/FIELD]
+
+[FIELD:選考フロー]
+書類選考（3営業日以内に結果通知）
+　↓
+コーディングテスト（オンライン・1週間以内提出）
+　↓
+一次面接：エンジニアチーム（オンライン・60分）
+　↓
+二次面接：CTO（オンラインまたは対面・60分）
+　↓
+最終面接：CEO（対面・30分）
+　↓
+内定・オファー面談
+
+所要期間：通常2〜3週間
+[/FIELD]`;
+
+// State
+let posting = {};
+let isGenerating = false;
+let copiedField = null;
+
+// Build field cards
+function buildCards() {
+  const container = document.getElementById('fieldCards');
+  container.innerHTML = '';
+  FIELDS.forEach(f => {
+    const card = document.createElement('div');
+    card.id = 'card-' + f.key;
+    card.className = 'bg-white rounded-xl border-2 border-gray-200 overflow-hidden transition-all duration-300';
+    card.innerHTML = `
+      <div id="header-${f.key}" class="flex items-center justify-between px-4 py-2.5 bg-gray-50">
+        <div class="flex items-center gap-2">
+          <span id="status-${f.key}" class="text-xs font-bold uppercase tracking-wide text-gray-400">○ 未生成</span>
+          <h3 class="font-semibold text-gray-700 text-sm">${f.label}</h3>
+          ${f.maxChars ? `<span id="chars-${f.key}" class="text-xs text-gray-400 hidden">(0/${f.maxChars}字)</span>` : ''}
+        </div>
+        <button id="copy-${f.key}" class="hidden flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          コピー
+        </button>
+      </div>
+      <div class="px-4 py-3">
+        <textarea id="ta-${f.key}" rows="${f.rows}"
+          class="w-full text-sm text-gray-800 leading-relaxed border-0 outline-none resize-none bg-transparent placeholder-gray-300"
+          placeholder="生成待ち..."
+          oninput="onFieldInput('${f.key}', this.value)"
+        ></textarea>
+      </div>
+    `;
+    container.appendChild(card);
+
+    document.getElementById('copy-' + f.key).addEventListener('click', () => copyField(f.key));
+  });
+}
+
+function onFieldInput(key, value) {
+  posting[key] = value;
+}
+
+function copyField(key) {
+  const val = document.getElementById('ta-' + key).value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('copy-' + key);
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 18 4 13"/></svg> コピー済`;
+    btn.classList.add('text-green-500');
+    setTimeout(() => {
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> コピー`;
+      btn.classList.remove('text-green-500');
+    }, 2000);
+  });
+}
+
+function setFieldValue(key, value) {
+  const ta = document.getElementById('ta-' + key);
+  if (ta) ta.value = value;
+  posting[key] = value;
+
+  const charEl = document.getElementById('chars-' + key);
+  const f = FIELDS.find(f => f.key === key);
+  if (charEl && f && f.maxChars) {
+    charEl.textContent = `(${value.length}/${f.maxChars}字)`;
+    charEl.className = 'text-xs ' + (value.length > f.maxChars ? 'text-red-400' : 'text-gray-400');
+    charEl.classList.remove('hidden');
+  }
+
+  const copyBtn = document.getElementById('copy-' + key);
+  if (copyBtn && value) copyBtn.classList.remove('hidden');
+}
+
+function setActiveField(key) {
+  FIELDS.forEach(f => {
+    const card = document.getElementById('card-' + f.key);
+    const header = document.getElementById('header-' + f.key);
+    const status = document.getElementById('status-' + f.key);
+    const hasValue = (document.getElementById('ta-' + f.key) || {}).value;
+
+    if (f.key === key) {
+      card.className = 'bg-white rounded-xl border-2 border-blue-400 shadow-md shadow-blue-100 field-generating overflow-hidden transition-all duration-300';
+      header.className = 'flex items-center justify-between px-4 py-2.5 bg-blue-50';
+      status.textContent = '● 生成中';
+      status.className = 'text-xs font-bold uppercase tracking-wide text-blue-600';
+    } else if (hasValue) {
+      card.className = 'bg-white rounded-xl border-2 border-green-200 shadow-sm overflow-hidden transition-all duration-300';
+      header.className = 'flex items-center justify-between px-4 py-2.5 bg-green-50';
+      status.textContent = '✓ 完了';
+      status.className = 'text-xs font-bold uppercase tracking-wide text-green-600';
+    } else {
+      card.className = 'bg-white rounded-xl border-2 border-gray-200 overflow-hidden transition-all duration-300';
+      header.className = 'flex items-center justify-between px-4 py-2.5 bg-gray-50';
+      status.textContent = '○ 未生成';
+      status.className = 'text-xs font-bold uppercase tracking-wide text-gray-400';
+    }
+  });
+}
+
+function parseCompletedFields(text) {
+  const regex = /\[FIELD:([^\]]+)\]([\s\S]*?)\[\/FIELD\]/g;
+  const result = {};
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const fieldName = match[1].trim();
+    const value = match[2].trim();
+    const key = FIELD_NAME_TO_KEY[fieldName];
+    if (key) result[key] = value;
+  }
+  return result;
+}
+
+function detectActiveField(text) {
+  const lastOpen = text.lastIndexOf('[FIELD:');
+  if (lastOpen === -1) return null;
+  const afterOpen = text.slice(lastOpen);
+  if (afterOpen.includes('[/FIELD]')) return null;
+  const m = afterOpen.match(/^\[FIELD:([^\]]+)\]/);
+  return m ? m[1].trim() : null;
+}
+
+function startGeneration() {
+  isGenerating = true;
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('fieldCards').classList.remove('hidden');
+  document.getElementById('doneTag').classList.add('hidden');
+  document.getElementById('copyAllBtn').classList.add('hidden');
+  document.getElementById('downloadBtn').classList.add('hidden');
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('demoBtn').disabled = true;
+  document.getElementById('generatingMsg').classList.remove('hidden');
+  posting = {};
+}
+
+function finishGeneration() {
+  isGenerating = false;
+  setActiveField(null);
+  document.getElementById('doneTag').classList.remove('hidden');
+  document.getElementById('copyAllBtn').classList.remove('hidden');
+  document.getElementById('downloadBtn').classList.remove('hidden');
+  document.getElementById('generateBtn').disabled = false;
+  document.getElementById('demoBtn').disabled = false;
+  document.getElementById('generatingMsg').classList.add('hidden');
+}
+
+async function runDemo() {
+  startGeneration();
+  buildCards();
+
+  const chunkSize = 8;
+  const delay = 18;
+  let accumulated = '';
+  const panel = document.getElementById('outputPanel');
+  panel.scrollTo({ top: 0, behavior: 'smooth' });
+
+  for (let i = 0; i < DEMO_OUTPUT.length; i += chunkSize) {
+    await new Promise(r => setTimeout(r, delay));
+    accumulated += DEMO_OUTPUT.slice(i, i + chunkSize);
+
+    const fields = parseCompletedFields(accumulated);
+    Object.entries(fields).forEach(([key, val]) => setFieldValue(key, val));
+
+    const activeFieldName = detectActiveField(accumulated);
+    const activeKey = activeFieldName ? FIELD_NAME_TO_KEY[activeFieldName] : null;
+    setActiveField(activeKey);
+  }
+
+  finishGeneration();
+}
+
+// Copy all
+document.getElementById('copyAllBtn').addEventListener('click', () => {
+  const lines = FIELDS.map(f => {
+    const val = (document.getElementById('ta-' + f.key) || {}).value || '';
+    return val ? `【${f.label}】\n${val}` : '';
+  }).filter(Boolean).join('\n\n');
+  navigator.clipboard.writeText(lines);
+  const btn = document.getElementById('copyAllBtn');
+  btn.textContent = '✓ コピーしました';
+  setTimeout(() => { btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> 全コピー`; }, 2000);
+});
+
+// Download
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const lines = FIELDS.map(f => {
+    const val = (document.getElementById('ta-' + f.key) || {}).value || '';
+    return val ? `【${f.label}】\n${val}` : '';
+  }).filter(Boolean).join('\n\n');
+  const blob = new Blob([lines], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '求人票.txt';
+  a.click();
+});
+
+// Clear
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('rawInput').value = '';
+});
+
+// Paste
+document.getElementById('pasteBtn').addEventListener('click', async () => {
+  const text = await navigator.clipboard.readText().catch(() => '');
+  document.getElementById('rawInput').value = text;
+});
+
+// Generate (no API in demo)
+document.getElementById('generateBtn').addEventListener('click', () => {
+  alert('デモモードのため、実際のAPI生成はできません。\n「デモデータで動作確認」ボタンをお試しください。');
+});
+
+// Demo
+document.getElementById('demoBtn').addEventListener('click', () => {
+  if (!isGenerating) runDemo();
+});
+
+// Init
+buildCards();
+</script>
+</body>
+</html>
