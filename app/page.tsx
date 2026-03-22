@@ -184,6 +184,138 @@ const DEFAULT_POSTING: JobPosting = {
 };
 
 // ─────────────────────────────────────────────
+// Demo output (simulates Claude's streaming response)
+// ─────────────────────────────────────────────
+const DEMO_OUTPUT = `[FIELD:求人タイトル]
+【渋谷】シニアバックエンドエンジニア｜株式会社テクノソリューションズ｜年収700万〜1000万円・フレックス勤務
+[/FIELD]
+
+[FIELD:キャッチコピー]
+急成長SaaSでアーキテクチャを牽引。技術で事業を動かすポジション
+[/FIELD]
+
+[FIELD:募集職種]
+バックエンドエンジニア（シニア・テックリード候補）
+[/FIELD]
+
+[FIELD:雇用形態]
+正社員（試用期間3ヶ月）
+[/FIELD]
+
+[FIELD:勤務地]
+東京都渋谷区道玄坂2-10-12（渋谷駅・徒歩5分）
+※フレックスタイム制によりリモート勤務併用可
+[/FIELD]
+
+[FIELD:年収・給与]
+年収700万円〜1000万円（経験・スキルに応じて決定）
+[/FIELD]
+
+[FIELD:給与詳細]
+月給50万円〜70万円（固定残業代含まず）
+賞与：年2回（業績連動型、前期実績 平均1.8ヶ月分）
+昇給：年1回（4月）
+試用期間中の待遇変更なし
+[/FIELD]
+
+[FIELD:仕事内容]
+■ ポジション概要
+急成長中のBtoB SaaSプロダクト「ConnectHub」のバックエンド開発をリードするポジションです。
+エンジニア60名体制の中で、5名のチームを率いながら、新機能開発から技術的意思決定まで幅広く担当していただきます。
+
+■ 具体的な業務内容
+・新規SaaSプロダクト「ConnectHub」のバックエンドAPI設計・実装（Go / Python）
+・マイクロサービスアーキテクチャの設計・移行・最適化
+・チームメンバー5名のコードレビュー、技術メンタリング
+・アーキテクチャ選定・技術スタックの意思決定への参画
+・インフラ（AWS）のコスト最適化・パフォーマンスチューニング
+・月1回の技術発表会（LT会）での登壇・ナレッジシェア
+
+■ チーム・開発環境
+チーム構成：シニアエンジニア2名、ミドルエンジニア3名
+技術スタック：Go / Python / PostgreSQL / Redis / AWS（ECS, RDS, S3）/ Terraform
+開発スタイル：スクラム（2週間スプリント）、PR レビュー文化が根付いており品質重視
+[/FIELD]
+
+[FIELD:必須スキル・経験]
+・バックエンド開発の実務経験5年以上（Go / Java / Python / Rubyいずれか）
+・AWS等クラウドインフラを活用したシステム構築・運用経験
+・チームリードまたはテックリードとしてのマネジメント経験（3名以上）
+・RESTful API またはGraphQL の設計・実装経験
+・RDB（MySQL / PostgreSQL）の設計・パフォーマンスチューニング経験
+[/FIELD]
+
+[FIELD:歓迎スキル・経験]
+・SaaS企業でのプロダクト開発経験
+・マイクロサービスアーキテクチャの設計・移行経験
+・Terraform / Infrastructure as Code の実務経験
+・GraphQL の実務経験
+・技術ブログ執筆やOSS コントリビューションの実績
+・英語でのビジネスコミュニケーション能力（社内ドキュメントの一部が英語）
+[/FIELD]
+
+[FIELD:求める人物像]
+・技術的なこだわりを持ちながら、事業成長にコミットできる方
+・チームのパフォーマンスを最大化することに喜びを感じる方
+・変化の速い環境でも自律的に動き、積極的に課題解決できる方
+・エンジニアリング組織のカルチャー作りに興味がある方
+[/FIELD]
+
+[FIELD:勤務時間]
+フレックスタイム制
+コアタイム：11:00〜16:00
+標準労働時間：8時間/日（所定労働時間）
+時間外労働：月平均10〜15時間程度
+[/FIELD]
+
+[FIELD:休日・休暇]
+完全週休2日制（土・日）、祝日
+年末年始休暇（12/29〜1/3）
+年次有給休暇（入社半年後から20日付与、最大40日繰越可）
+慶弔休暇、特別休暇
+育児休業・介護休業（取得実績あり、男性取得率60%）
+[/FIELD]
+
+[FIELD:福利厚生]
+■ 社会保険・手当
+・各種社会保険完備（健康・厚生年金・雇用・労災）
+・通勤手当（全額支給、上限なし）
+・時間外手当（固定残業超過分は全額別途支給）
+
+■ キャリア・スキルアップ支援
+・書籍購入補助：月1万円（技術書・ビジネス書問わず）
+・外部勉強会・カンファレンス参加費全額会社負担（KubeCon、AWS re:Invent等）
+・オンライン学習プラットフォーム（Udemy Business）利用可
+
+■ ライフスタイル支援
+・リモートワーク可（週3日まで）
+・社員食堂完備（昼食補助あり、1食300円負担）
+・健康診断（年1回、家族も補助対象）
+・インフルエンザ予防接種補助
+
+■ その他
+・ストックオプション制度（全社員対象）
+・社内表彰制度（四半期MVP）
+[/FIELD]
+
+[FIELD:選考フロー]
+書類選考（3営業日以内に結果通知）
+　↓
+コーディングテスト（オンライン・1週間以内提出）
+　↓
+一次面接：エンジニアチーム（オンライン・60分）
+　↓
+二次面接：CTO（オンラインまたは対面・60分）
+　↓
+最終面接：CEO（対面・30分）
+　↓
+内定・オファー面談
+
+所要期間：通常2〜3週間
+※ご状況に応じてスケジュール調整可能です
+[/FIELD]`;
+
+// ─────────────────────────────────────────────
 // Sample input for demo
 // ─────────────────────────────────────────────
 const SAMPLE_INPUT = `【顧客情報メモ】
@@ -402,6 +534,35 @@ export default function Page() {
   const accumulatedRef = useRef<string>("");
 
   const filledCount = Object.values(jobPosting).filter((v) => v.length > 0).length;
+
+  // Demo mode: simulate streaming with pre-built output
+  const handleDemoGenerate = useCallback(async () => {
+    setIsGenerating(true);
+    setError(null);
+    setGenerationDone(false);
+    setJobPosting(DEFAULT_POSTING);
+    setActiveField(null);
+    accumulatedRef.current = "";
+    if (outputPanelRef.current) {
+      outputPanelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    const chunkSize = 8; // chars per tick
+    const delay = 18;    // ms between ticks
+
+    for (let i = 0; i < DEMO_OUTPUT.length; i += chunkSize) {
+      await new Promise((r) => setTimeout(r, delay));
+      accumulatedRef.current += DEMO_OUTPUT.slice(i, i + chunkSize);
+      const fields = parseCompletedFields(accumulatedRef.current);
+      const current = detectActiveField(accumulatedRef.current);
+      setActiveField(current);
+      setJobPosting((prev) => ({ ...prev, ...fields }));
+    }
+
+    setIsGenerating(false);
+    setGenerationDone(true);
+    setActiveField(null);
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!rawInput.trim()) {
@@ -677,6 +838,16 @@ export default function Page() {
                   <span>求人票を自動生成</span>
                 </>
               )}
+            </button>
+
+            {/* Demo mode button */}
+            <button
+              onClick={handleDemoGenerate}
+              disabled={isGenerating}
+              className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl transition-all text-sm"
+            >
+              <Sparkles size={14} />
+              デモデータで動作確認
             </button>
 
             {isGenerating && (
